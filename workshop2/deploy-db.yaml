@@ -1,0 +1,76 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nw
+  labels:
+    version: v1
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nw-db-secret
+  namespace: nw
+data:
+  db_password: cGFzc3dvcmQ=
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nw-db-deploy
+  namespace: nw
+  labels:
+    name: nw-db
+    version: v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: nw-db
+      version: v2
+  template:
+    metadata:
+      name: nw-db-pod
+      labels:
+        name: nw-db
+        version: v2
+    spec:
+      containers:
+      - name: nw-db-container
+        image: njmingz/course-example-northwind-db:0.0.2
+        imagePullPolicy: IfNotPresent
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - mysql -uroot -p${MYSQL_ROOT_PASSWORD}} -e 'SELECT 1'
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: nw-db-secret
+              key: db_password
+        ports:
+        - name: mysql-port
+          containerPort: 3306
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nw-db-svc
+  namespace: nw
+  labels:
+    name: nw-db
+    version: v2
+spec:
+  selector:
+    name: nw-db
+    version: v2
+  ports:
+  - name: nw-db-port
+    port: 3306
+    targetPort: mysql-port
+

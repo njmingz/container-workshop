@@ -1,0 +1,97 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nw-app-cm
+  namespace: nw
+  labels:
+    name: nw-app
+    version: v2
+data:
+  db_host: nw-db-svc.nw.svc.cluster.local
+  db_port: "3306"
+  db_user: root
+  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nw-app-deploy
+  namespace: nw
+  labels:
+    name: nw-app
+    version: v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: nw-app
+      version: v2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      name: nw-app-pod
+      labels:
+        name: nw-app
+        version: v2
+    spec:
+      containers:
+      - name: nw-app-container
+        image: stackupiss/northwind-app:v2
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            port: 3000
+            path: /health
+        env:
+        - name: DB_HOST
+          valueFrom: 
+            configMapKeyRef:
+              name: nw-app-cm
+              key: db_host
+        - name: DB_PORT
+          valueFrom: 
+            configMapKeyRef:
+              name: nw-app-cm
+              key: db_port
+        - name: DB_USER
+          valueFrom: 
+            configMapKeyRef:
+              name: nw-app-cm
+              key: db_user
+        - name: DB_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: nw-db-secret
+              key: db_password
+        - name: INSTANCE_IP_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP 
+        ports:
+        - name: app-con-port
+          containerPort: 3000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nw-app-svc
+  namespace: nw
+  labels:
+    name: nw-app
+    version: v2
+spec:
+  type: LoadBalancer
+  selector:
+    name: nw-app
+    version: v2
+  ports:
+  - name: nw-app-port
+    port: 80
+    targetPort: app-con-port
+
