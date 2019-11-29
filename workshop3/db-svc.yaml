@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-db-svc
+  namespace: app-ns
+  labels:
+    name: app-db
+    version: v1
+spec:
+  type: ClusterIP
+  selector:
+    name: app-db
+  ports:
+  - port: 3306
+    targetPort: app-db-port

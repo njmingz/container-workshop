@@ -1,0 +1,64 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-db-secret
+  namespace: app-ns
+data:
+  db_password: cGFzc3dvcmQ=
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-db-deploy
+  namespace: app-ns
+  labels:
+    name: app-db
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: app-db
+      version: v1
+  template:
+    metadata:
+      name: app-db-pod
+      labels:
+        name: app-db
+        version: v1
+    spec:
+      volumes:
+      - name: app-db-pv
+        persistentVolumeClaim:
+          claimName: app-pvc
+      initContainers:
+      - name: scrub
+        image: busybox
+        command: ["/bin/sh", "-c", "test -e /scrub && rm -rf /scrub/..?* /scrub/.[!.]* /scrub/*  && test -z \"$(ls -A /scrub)\" || exit 1"]
+        volumeMounts:
+        - name: app-db-pv
+          mountPath: /scrub
+      containers:
+      - name: app-db-con
+        image: njmingz/course-example-northwind-db:0.0.2
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: app-db-secret
+              key: db_password
+        ports:
+        - name: app-db-port
+          containerPort: 3306
+        volumeMounts:
+        - name: app-db-pv
+          mountPath: /var/lib/mysql
+          
+

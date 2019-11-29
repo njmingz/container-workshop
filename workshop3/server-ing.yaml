@@ -1,0 +1,32 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: app-serve-ing
+  namespace: app-ns
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  
+spec:
+  rules:
+  - host: v1.157.230.192.232.nip.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: app-serve-svc-1
+          servicePort: 80
+  
+  - host: v2.157.230.192.232.nip.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: app-serve-svc-2
+          servicePort: 80
+  
+  backend:
+    serviceName: app-serve-svc-2
+    servicePort: 80
+

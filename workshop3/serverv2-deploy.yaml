@@ -1,0 +1,67 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-serve-cm
+  namespace: app-ns
+  labels:
+    name: app-serve
+data:
+  db_host: app-db-svc.app-ns.svc.cluster.local
+  db_port: "3306"
+  db_user: root
+  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-serve-deploy-2
+  namespace: app-ns
+  labels:
+    name: app-serve
+    version: v2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      name: app-serve
+      version: v2
+  template:
+    metadata:
+      name: app-serve-pod-2
+      labels:
+        name: app-serve
+        version: v2
+    spec:
+      containers:
+      - name: app-serve-container
+        image: stackupiss/northwind-app:v2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: DB_HOST
+          valueFrom: 
+            configMapKeyRef:
+              name: app-serve-cm
+              key: db_host
+        - name: DB_PORT
+          valueFrom: 
+            configMapKeyRef:
+              name: app-serve-cm
+              key: db_port
+        - name: DB_USER
+          valueFrom: 
+            configMapKeyRef:
+              name: app-serve-cm
+              key: db_user
+        - name: DB_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: app-db-secret
+              key: db_password
+        - name: INSTANCE_IP_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP 
+        ports:
+        - name: app-serve-port
+          containerPort: 3000

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather
+spec:
+  selector:
+    matchLabels:
+      app: weather
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: weather
+        version: v1
+    spec:
+      containers:
+      - name: weather
+        image: stackupiss/weather:v1
+        env:
+        - name: APP_ID
+          value: cf6b4a85344b2b83105bbdf8d09d7186
+        - name: APP_DEFAULT_CITY
+          value: singapore
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 3000
